@@ -5,6 +5,7 @@ on: [push]
 env:
   TOOLCHAIN: default
   INSTALLER: yes
+  ver: $(echo ${{ github.event.head_commit.id }} | head -c 7)
 
 jobs:
   build:
@@ -13,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        model: [ "G970F,G973F,G975F", "N970F,N975F" ]
+        model: [ "G977N" ]
 
     steps:
       - uses: actions/checkout@v2
@@ -21,23 +22,35 @@ jobs:
         with:
           python-version: '3.6'
 
+
+      - name: Var value to model S10 5G
+        if: matrix.model == 'G977B'
+        run: |
+          echo "mod=S10-5G" >> $GITHUB_ENV
       - name: Kernel Configure
         run: |
           set -e -o pipefail
           ./cruelbuild config                    \
                        model=${{ matrix.model }} \
-                       name="Cruel-v4.0"         \
+                       name="VaLueSKernel-"$mod"-v."${{ env.ver }}\
+                       os_patch_level=2099-01    \
                        toolchain=$TOOLCHAIN      \
-                       +magisk                   \
+                       +magisk=v22.0             \
+                       +io_noop                  \
+                       +tcp_cubic                \
+                       +sched_userspace          \
+                       +performance              \
                        +nohardening              \
                        +ttl                      \
                        +wireguard                \
                        +cifs                     \
                        +sdfat                    \
                        +ntfs                     \
-                       +force_dex_wqhd           \
                        +morosound                \
                        +boeffla_wl_blocker       \
+                       +nodebug                  \
+                       +fp_boost                 \
+                       +force_dex_wqhd           \
           2>&1 | tee config.info
 
       - name: Install gcc-aarch64-linux-gnu
